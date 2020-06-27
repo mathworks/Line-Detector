@@ -177,11 +177,8 @@ classdef detectLines < handle
         function processedImg = preprocess(img, lineDetector)
             % First: Is the image already logical? (Hough works on binary
             % images--and works BEST on edge-detected binary images.)
-            if ~islogical(img)
-                % First convert to grayscale if RGB:
-                if size(img,3) ~= 1
-                    lineDetector.processedImg = im2gray(img); % Requires R2020b+
-                end
+            if size(img, 3) == 3
+                lineDetector.processedImg = im2gray(img); % Requires R2020b+
             else
                 lineDetector.processedImg = img;
             end
@@ -191,6 +188,7 @@ classdef detectLines < handle
                     lineDetector.processedImg);
             end
             if ~islogical(lineDetector.processedImg)
+                % DEFAULT binarization/edge 
                 lineDetector.processedImg = imbinarize(lineDetector.processedImg);
                 lineDetector.processedImg = edge(lineDetector.processedImg, 'LOG'); 
             end
