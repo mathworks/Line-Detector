@@ -1,9 +1,89 @@
 classdef detectLines < handle
     % AUTOMATED LINE DETECTOR
-    %   DETECTOR = DETECTLINES(IMG) automatically analyzes an input image and
-    %   detects lines using a Hough workflow. Output DETECTIONS contains the
-    %   begining/endpoints of detections.
-    %   lineDetectorect.
+    %   DETECTOR = DETECTLINES(IMG) automatically analyzes an input image
+    %   and detects lines using a Hough workflow. Output DETECTIONS
+    %   contains the begining/endpoints of detections.
+    %
+    % Binary images are detected directly. Non-binary images are
+    % automatically preprocessed first using a generic (but
+    % often-successful) set of sequential preprocessing functions.
+    % 
+    % SYNTAX:
+    % out = detectLines(img, Name, Value)
+    %   (All Name-Value pairs are optional.)
+    %
+    % INPUTS: 
+    % img         % Required; detectLines supports any class of image.
+    %
+    % fillGap     % Default 20
+    %   (See houghlines)
+    %
+    % lineProperties % For visualization using display method,
+    %   provide a struct containing valid properties of drawline.
+    %   Default:
+    %      lineProperties.Color = 'g';
+    %      lineProperties.LineWidth = 2;
+    %
+    % minLength   % Default 40
+    %   (See houghlines)
+    %
+    % NHoodSize   % 2-element vector of positive odd integers; calculated
+    %    at runtime based on size of input image.
+    %   (See houghpeaks)
+    %
+    % numPeaks    % Default 1
+    %   This is the maximum number of detcted lines that exceed
+    %   _threshold_. (See houghpeaks)
+    %
+    % preprocessingFcns    
+    %   You may specify a custom array of function handles, but the final
+    %   step should return a binary image. And for best results, it should
+    %   likely return an edge-detected binary version! Binary input images
+    %   are processed directly. Non-binary images are automatically
+    %   preprocessed using:
+    %       preprocessingFcns = {@im2gray;        % Requires R2020b+; RGB2GRAY may be substituted
+    %                            @imbinarize;     % Otsu
+    %                            @(I) edge(I);}   % Sobel
+    %   unless a custom array of preprocessing steps is provided. If a
+    %   non-empty set of preprocessing steps does not result in a binary
+    %   img, the final result will be automatically converted with
+    %   @imbinarize. (Hough requires a binary image.)
+    %
+    % rhoResolution  %Spacing of Hough transform bins; Default 1.
+    %   (See hough)
+    %
+    % thetaMax    % Maximum value of theta in call to hough. Default 89.
+    %   (See hough)
+    %
+    % thetaMin    % Minimum value of theta in call to hough. Default -90.
+    %   (See hough)
+    %
+    % thetaStep    % Minimum value to be considered a peak, specified as a
+    %   nonnegative number. Calculated at runtime based on hough matrix.
+    %   Default 1. (See houghpeaks)
+    %
+    % OUTPUT: 
+    %   detections  % A struct, the fields of which contain (IN ADDITION TO
+    %      input properties and all values returned by hough, houghpeaks,
+    %      and houghlines):
+    %  
+    %      'lines' % The output of houghlines. (See houghlines)
+    % 
+    %      'handles' % Handles to line objects (created using drawlines).
+    %      Note that this field is populated only after calling 'display'
+    %      method.
+    % 
+    %
+    % METHODS:
+    % detect
+    %   Call, or Re-call, detection algorithm. |detect| is called on
+    %   instantiation of the detector. You may subsequently re-detect using
+    %   different properties by passing in the returned detector. (See
+    %   example 1a below.)
+    %
+    % display
+    %   Create images.roi.Line object(s) (using drawline). Calling this
+    %   method populates the output field 'handles'.)
     %
     % % EXAMPLES
     %
@@ -11,32 +91,46 @@ classdef detectLines < handle
     %
     % img = imread('gantrycrane.png');
     % imshow(img)
-    % myLines = detectLines(img, ...
+    % detections = detectLines(img, ...
     %    'numPeaks', 10, ...
     %    'minLength', 100, ...
     %    'NHoodSize', [51 51], ...    
     %    'threshold', 1);
-    % displayDetections(myLines)
-    % % Modify, re-detect:
-    % myLines.thetaMin = -20;
-    % myLines.thetaMax = 60;
-    % myLines = detect(myLines);
-    % % Note: this resets myLines.handles!
-    % lineOpts.Color = 'r';
-    % lineOpts.LineWidth = 3;
-    % displayDetections(myLines, lineOpts)
-    % lineOpts.Color = 'r';
-    % lineOpts.LineWidth = 3;
-    % displayDetections(myLines, lineOpts)
+    % display(detections)
+    % 
+    % % Example 1a: Modify, re-detect:
+    % detections.thetaMin = -20;
+    % detections.thetaMax = 60;
+    % detections = detect(detections);
+    % set(detections.handles, 'Color', 'r')
+    % % Note: this resets detections.handles!
+    % display(detections)
     %
-    % preprocessingFcns = ...
-    %   {@(x) imadjust(x,[0.20; 0.30],[0.00; 1.00],1.00);
-    %    @(x) imcomplement(x);
-    %    @(x) edge(x,'LOG',0.015,2.00)};
+    % % Example 2: bricksRotated
     %
-    % figure
+    % img = imread('bricksRotated.jpg');
     % imshow(img)
-    % detections = detectLines(img);
+    % detections = detectLines(img, ...
+    %  'fillGap', 100, ...
+    %  'threshold', 1, ...
+    %  'numPeaks', 14);
+    % display(detections)
+    %
+    % % Example 2a: Specifying preprocessing and display options
+    % 
+    % img = imread('bricksRotated.jpg');
+    % imshow(img)
+    % detections = detectLines(img, ...
+    %  'preprocessingFcns', ...
+    %     {@imbinarize;
+    %      @(I)edge(I,'LOG');
+    %      @(I)bwareaopen(I, 50)}, ...
+    %  'fillGap', 100, ...
+    %  'threshold', 1, ...
+    %  'numPeaks', 14);
+    % lineOpts.Color = 'r';
+    % lineOpts.LineWidth = 3;
+    % display(detections, lineOpts)
     %
     % Brett Shoelson, PhD
     % bshoelso@mathworks.com
@@ -47,12 +141,12 @@ classdef detectLines < handle
     % Copyright 2020 The MathWorks, Inc.
     
     properties
-        detections %OUTPUT STRUCT
         fillGap
         handles 
         HoughTransform
         img
         lineProperties
+        lines % CONTAINS OUTPUT OF HOUGHLINES
         minLength
         NHoodSize %[m, n]
         numPeaks
@@ -95,7 +189,10 @@ classdef detectLines < handle
                 parser.addParameter('minLength', 40);
                 parser.addParameter('NHoodSize', []);
                 parser.addParameter('numPeaks', 1);
-                parser.addParameter('preprocessingFcns', {});
+                processFcns = {@im2gray;
+                    @(I) imfill(I, 'holes');
+                    @(I) edge(I, 'LOG')};
+                parser.addParameter('preprocessingFcns', processFcns);
                 parser.addParameter('rhoResolution', 1);
                 parser.addParameter('thetaMax', 89);
                 parser.addParameter('thetaMin', -90);
@@ -149,7 +246,7 @@ classdef detectLines < handle
              %    arguments are provided for the former.
              % tmpPeaks = houghpeaks(lineDetector.HoughTransform);
              %%%
-           lineDetector.detections = houghlines(thisImg, ...
+           lineDetector.lines = houghlines(thisImg, ...
                 lineDetector.theta, ...
                 lineDetector.rho, ...
                 lineDetector.peaks, ...
@@ -157,16 +254,16 @@ classdef detectLines < handle
                 'MinLength', lineDetector.minLength);
         end %detect
         %
-        function displayDetections(lineDetector, lineProperties)
+        function display(lineDetector, lineProperties)
             if nargin < 2 || isempty(lineProperties)
                 lineProperties.Color = 'g';
                 lineProperties.LineWidth = 2;
             end
             lineDetector.lineProperties = lineProperties;
-            lineDetector.handles = gobjects(size(lineDetector.detections,2), 1);
+            lineDetector.handles = gobjects(size(lineDetector.lines,2), 1);
             for ii = 1:numel(lineDetector.handles)
-                thisPosition = [lineDetector.detections(ii).point1;
-                    lineDetector.detections(ii).point2];
+                thisPosition = [lineDetector.lines(ii).point1;
+                    lineDetector.lines(ii).point2];
                 lineDetector.handles(ii) = drawline('Position', thisPosition, ...
                     lineProperties);
             end
@@ -177,20 +274,16 @@ classdef detectLines < handle
         function processedImg = preprocess(img, lineDetector)
             % First: Is the image already logical? (Hough works on binary
             % images--and works BEST on edge-detected binary images.)
-            if size(img, 3) == 3
-                lineDetector.processedImg = im2gray(img); % Requires R2020b+
+            if ~islogical(img)
+            %  Preprocess
+                lineDetector.processedImg = ...
+                    applyFunctionHandles(img, lineDetector.preprocessingFcns);
             else
                 lineDetector.processedImg = img;
-            end
-            %  Preprocess
-            for ii = 1:numel(lineDetector.preprocessingFcns)
-                lineDetector.processedImg = feval(lineDetector.preprocessingFcns{ii}, ...
-                    lineDetector.processedImg);
             end
             if ~islogical(lineDetector.processedImg)
                 % DEFAULT binarization/edge 
                 lineDetector.processedImg = imbinarize(lineDetector.processedImg);
-                lineDetector.processedImg = edge(lineDetector.processedImg, 'LOG'); 
             end
             processedImg = lineDetector.processedImg;
         end
