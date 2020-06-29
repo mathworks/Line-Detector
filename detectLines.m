@@ -98,6 +98,11 @@ classdef detectLines < handle
     %   Create images.roi.Line object(s) (using drawline). Calling this
     %   method populates the output field 'handles'.)
     %
+    % tuneInteractively
+    %   Simply passes processedImg into the segmentImage() app and
+    %   activates the Hough Transform panel. If you don't have the app, you
+    %   will be prompted to download/install it.
+    %
     % % EXAMPLES
     %
     % % Example 1: Gantry Crane
