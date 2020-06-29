@@ -18,7 +18,7 @@ classdef detectLines < handle
     % img         % Required; detectLines supports any class of image.
     %
     % fillGap     % Default 20
-    %   (See houghlines)
+    %   (See note at discussion; see houghlines)
     %
     % lineProperties % For visualization using displayResults method,
     %   provide a struct containing valid properties of drawline. 
@@ -32,9 +32,10 @@ classdef detectLines < handle
     % NHoodSize   % 2-element vector of positive odd integers; calculated
     %    at runtime based on size of input image. (See houghpeaks)
     %
-    % numLines    % Default 1
+    % numLines    % Default []
     %   Use this as an alternative to specifying numPeaks. If numLines is
-    %   specified: threshold is set to 0, and numPeaks is set to numLines.
+    %   specified: threshold is set to 0, fillGap is set to the diagonal
+    %   dimension of the input image, and numPeaks is set to numLines.
     %
     % numPeaks    % Default 1
     %   This is the maximum number of detcted lines that exceed
@@ -69,8 +70,9 @@ classdef detectLines < handle
     %   nonnegative number. Calculated at runtime based on hough matrix.
     %   Default 1. (See houghpeaks)
     %
-    % threshold    % Threshold for peak detection in houghpeaks. Default is calculated at runtime, based
-    %   on value of Hough transform. (See note at discussion of numLines.)
+    % threshold    % Threshold for peak detection in houghpeaks. Default is
+    %   calculated at runtime, based on value of Hough transform. (See note
+    %   at discussion of numLines.)
     %
     % OUTPUT:
     %
@@ -247,6 +249,9 @@ classdef detectLines < handle
             %
             if ~isempty(lineDetector.numLines)
                 lineDetector.threshold = 0;
+                [m,n] = size(lineDetector.processedImg);
+                lineDetector.fillGap = ceil(sqrt(m^2 + n^2));
+                lineDetector.numPeaks = lineDetector.numLines;
             end
             if isempty(lineDetector.threshold)
                 thisThreshold = 0.5*max(lineDetector.HoughTransform(:));
@@ -284,6 +289,7 @@ classdef detectLines < handle
                 lineDetector.handles(ii) = drawline('Position', thisPosition, ...
                     lineProperties);
             end
+            fprintf('%i Lines displayed.\n', numel(lineDetector.handles));
         end
     end
     
