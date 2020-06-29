@@ -291,6 +291,54 @@ classdef detectLines < handle
             end
             fprintf('%i Lines displayed.\n', numel(lineDetector.handles));
         end
+        %
+        function tuneInteractively(lineDetector)
+            % 
+            try
+                segtoolHndl = segmentImageX(lineDetector.processedImg);
+            catch
+                beep
+                s1 = sprintf('\nNOTE:\nInteractive tuning requires the segmentImage() app. It appears\nthat you don''t have it!. Please first download and install\n');
+                s2 = sprintf('<a href="matlab: web(''https://www.mathworks.com/matlabcentral/fileexchange/48859-segment-images-interactively-and-generate-matlab-code'')">segmentImage</a> from the MATLAB Central File Exchange.\n\n');
+                %error(['TABPANEL: Unsupported option.',s1,s2]);
+                fprintf('\ndetectLines: Method unavailable.\n%s%s',s1,s2)
+                return
+            end
+            % Activate Hough Panel:
+            %tabPanel(tabCardHandles,tabHandles{tier}(tabRank,:))
+            mainTabPanel = findall(segtoolHndl, ...
+                'type','UiPanel', 'tag', 'mainTabPanel');
+            tabCardHandles = getappdata(segtoolHndl, 'mainTabCardHandles');
+            tabHandles = getappdata(mainTabPanel, 'tabHandles');
+            houghTab = tabHandles{1}(3);
+            tabPanel(tabCardHandles, houghTab);
+%             % Set values:
+%             houghCardHandle = tabCardHandles{1}(3);
+%             allHndls = findall(houghCardHandle);
+%             tmp = findall(allHndls, 'Tag', 'HoughLinesMinLength');
+%             set(tmp, 'string', lineDetector.minLength);
+%             tmp = findall(allHndls, 'Tag', 'HoughLinesFillGap');
+%             set(tmp, 'string', lineDetector.fillGap);
+%             tmp = findall(allHndls, 'Tag', 'HoughNHoodSize1');
+%             set(tmp, 'string', lineDetector.NHoodSize(1));
+%             tmp = findall(allHndls, 'Tag', 'HoughNHoodSize2');
+%             set(tmp, 'string', lineDetector.NHoodSize(2));
+%             tmp = findall(allHndls, 'Tag', 'NumPeaksSldr');
+%             set(tmp, 'Value', lineDetector.numPeaks);
+%             tmp = findall(allHndls, 'Tag', 'ThetaResSldr');
+%             set(tmp, 'Value', lineDetector.thetaStep);
+%             tmp = findall(allHndls, 'Tag', 'ThetaMinSldr');
+%             set(tmp, 'Value', lineDetector.thetaMin);
+%             tmp = findall(allHndls, 'Tag', 'ThetaMaxSldr');
+%             set(tmp, 'Value', lineDetector.thetaMax, ...
+%                 'string', num2str(lineDetector.thetaMax));
+%             tmp = findall(allHndls, 'Tag', 'HoughPeakThresh');
+%             set(tmp, 'Value', lineDetector.threshold);
+%             tmp = findall(allHndls, 'Tag', 'ThetaResSldr');
+%             set(tmp, 'Value', 4, 'string', '4');
+%             rhoResolution
+%             feval(tmp(1).Callback)
+        end
     end
     
     methods (Access = private)
