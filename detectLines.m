@@ -119,7 +119,7 @@ classdef detectLines < handle
     % set(detections.handles, 'Color', 'r')
     % displayResults(detections)
     %
-    % % Example 2: bricksRotated
+    % % Example 2: bricksRotated; tune interactively
     %
     % img = imread('bricksRotated.jpg');
     % imshow(img)
@@ -128,6 +128,8 @@ classdef detectLines < handle
     %  'threshold', 1, ...
     %  'numPeaks', 14);
     % displayResults(detections)
+    % methods(detections)
+    % tuneInteractively(detections)
     %
     % % Example 2a: Specifying preprocessing and display options
     %
@@ -295,12 +297,11 @@ classdef detectLines < handle
         function tuneInteractively(lineDetector)
             % 
             try
-                segtoolHndl = segmentImageX(lineDetector.processedImg);
+                segtoolHndl = segmentImage(lineDetector.processedImg);
             catch
                 beep
                 s1 = sprintf('\nNOTE:\nInteractive tuning requires the segmentImage() app. It appears\nthat you don''t have it!. Please first download and install\n');
                 s2 = sprintf('<a href="matlab: web(''https://www.mathworks.com/matlabcentral/fileexchange/48859-segment-images-interactively-and-generate-matlab-code'')">segmentImage</a> from the MATLAB Central File Exchange.\n\n');
-                %error(['TABPANEL: Unsupported option.',s1,s2]);
                 fprintf('\ndetectLines: Method unavailable.\n%s%s',s1,s2)
                 return
             end
