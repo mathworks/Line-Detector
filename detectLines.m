@@ -358,8 +358,22 @@ classdef detectLines < handle
             % images--and works BEST on edge-detected binary images.)
             if ~islogical(img)
                 %  Preprocess
-                lineDetector.processedImg = ...
-                    applyFunctionHandles(img, lineDetector.preprocessingFcns);
+                for ii = 1:numel(lineDetector.preprocessingFcns)
+                    thisFcn = lineDetector.preprocessingFcns{ii};
+                    str = func2str(thisFcn);
+                    if strcmp(str, 'im2gray') && ~exist(str, 'file')
+                        % @im2gray requires R2020b
+                        if size(img, 3) == 3
+                            lineDetector.processedImg = rgb2gray(img);
+                        else
+                            lineDetector.processedImg = img;
+                        end
+                    else
+                        lineDetector.processedImg = thisFcn(lineDetector.processedImg);
+                    end
+                end
+                % lineDetector.processedImg = ...
+                %    applyFunctionHandles(img, lineDetector.preprocessingFcns);
             else
                 lineDetector.processedImg = img;
             end
