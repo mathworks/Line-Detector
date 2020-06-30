@@ -33,9 +33,10 @@ classdef detectLines < handle
     %    at runtime based on size of input image. (See houghpeaks)
     %
     % numLines    % Default []
-    %   Use this as an alternative to specifying numPeaks. If numLines is
-    %   specified: threshold is set to 0, fillGap is set to the diagonal
-    %   dimension of the input image, and numPeaks is set to numLines.
+    %   Use this as an alternative to specifying numPeaks and fillGap. If
+    %   numLines is specified: threshold is set to 0, fillGap is set to the
+    %   diagonal dimension of the input image, and numPeaks is set to
+    %   numLines. This is easy syntax, but it provides less flexibility.
     %
     % numPeaks    % Default 1
     %   This is the maximum number of detcted lines that exceed
@@ -124,30 +125,32 @@ classdef detectLines < handle
     % set(detections.handles, 'Color', 'r')
     % displayResults(detections)
     %
-    % % Example 2: bricksRotated; tune interactively
+    % % Example 2: bricksRotated: specifying numLines
     %
     % img = imread('bricksRotated.jpg');
     % imshow(img)
     % detections = detectLines(img, ...
-    %  'fillGap', 100, ... 
-    %  'threshold', 1, ...
-    %  'numPeaks', 14);
+    %    'numLines', 14);
     % displayResults(detections)
-    % methods(detections)
+    %
+    % % Example 2a: Tune interactively
+    % img = imread('bricksRotated.jpg');
+    % imshow(img)
+    % detections = detectLines(img);
     % tuneInteractively(detections)
     %
-    % % Example 2a: Specifying preprocessing and display options
+    % % Example 2b: Specifying preprocessing and display options
     %
     % img = imread('bricksRotated.jpg');
     % imshow(img)
     % detections = detectLines(img, ...
-    %  'preprocessingFcns', ...
-    %     {@imbinarize;
-    %      @(I)edge(I,'LOG');
-    %      @(I)bwareaopen(I, 50)}, ...
-    %  'fillGap', 100, ... 
-    %  'threshold', 1, ... 
-    %  'numPeaks', 14);
+    %    'preprocessingFcns', ...
+    %       {@imbinarize;
+    %        @(I)edge(I,'LOG');
+    %        @(I)bwareaopen(I, 50)}, ...
+    %    'fillGap', 100, ... 
+    %    'threshold', 1, ... 
+    %    'numPeaks', 14);
     % lineOpts.Color = 'r';
     % lineOpts.LineWidth = 3;
     % displayResults(detections, lineOpts)
@@ -302,7 +305,9 @@ classdef detectLines < handle
         function tuneInteractively(lineDetector)
             % 
             try
+                drawnow
                 segtoolHndl = segmentImage(lineDetector.processedImg);
+                drawnow %Force completion; app is opening in partial state
             catch
                 beep
                 s1 = sprintf('\nNOTE:\nInteractive tuning requires the segmentImage() app. It appears\nthat you don''t have it!. Please first download and install\n');
