@@ -50,7 +50,7 @@ classdef detectLines < handle
     %   Binary input images are processed directly. Non-binary images are
     %   automatically preprocessed using:
     %       preprocessingFcns = ...
-    %       {@im2gray;    % Requires R2020b+; RGB2GRAY may be substituted
+    %       {@rgb2gray;       % Ignored for grayscale images
     %        @imbinarize;     % Otsu 
     %        @(I) edge(I);}   % Sobel
     %   unless a custom array of preprocessing steps is provided. If a
@@ -215,8 +215,8 @@ classdef detectLines < handle
                 parser.addParameter('NHoodSize', []);
                 parser.addParameter('numLines', []);
                 parser.addParameter('numPeaks', 1);
-                processFcns = {@im2gray;
-                    @(I) imfill(I, 'holes');
+                processFcns = {@rgb2gray;
+                    @imbinarize;
                     @(I) edge(I, 'LOG')};
                 parser.addParameter('preprocessingFcns', processFcns);
                 parser.addParameter('rhoResolution', 1);
@@ -357,26 +357,27 @@ classdef detectLines < handle
             % First: Is the image already logical? (Hough works on binary
             % images--and works BEST on edge-detected binary images.)
             if ~islogical(img)
-                %  Preprocess
+                % Preprocessing:
+                % (DEFAULT:)
+                % processFcns = {@rgb2gray;
+                %    @imbinarize;
+                %    @(I) edge(I, 'LOG')};
+                lineDetector.processedImg = lineDetector.img;
                 for ii = 1:numel(lineDetector.preprocessingFcns)
                     thisFcn = lineDetector.preprocessingFcns{ii};
-                    str = func2str(thisFcn);
-                    if strcmp(str, 'im2gray') && ~exist(str, 'file')
-                        % @im2gray requires R2020b
-                        if size(img, 3) == 3
-                            lineDetector.processedImg = rgb2gray(img);
-                        else
-                            lineDetector.processedImg = img;
-                        end
-                    else
+                    try
                         lineDetector.processedImg = thisFcn(lineDetector.processedImg);
+                    catch
+                        str = func2str(thisFcn);
+                        if strcmp(str, 'rgb2gray') && size(lineDetector.processedImg, 3) ~= 3
+                            continue
+                        else
+                            fprintf('Unable to apply function ''%s''.\n', str);
+                        end
                     end
                 end
-                % lineDetector.processedImg = ...
-                %    applyFunctionHandles(img, lineDetector.preprocessingFcns);
-            else
-                lineDetector.processedImg = img;
             end
+            
             if ~islogical(lineDetector.processedImg)
                 % DEFAULT binarization/edge
                 lineDetector.processedImg = imbinarize(lineDetector.processedImg);
